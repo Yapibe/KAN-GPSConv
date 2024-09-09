@@ -74,6 +74,7 @@ To train the model on a graph classification task:
 
 ```
 python experiments/train_model.py --dataset MUTAG --task graph
+```
 
 ## Evaluation
 
