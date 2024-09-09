@@ -4,6 +4,7 @@ from torch_geometric.nn import GCNConv
 from utils.data_loader import load_dataset, split_data, prepare_graph_data
 from models.gps_network import GPSNetwork
 import argparse
+import wandb
 
 def train_node(model, data, optimizer):
     model.train()
@@ -48,6 +49,9 @@ def test_graph(model, loader, device):
     return correct / len(loader.dataset)
 
 def main(args):
+    # Initialize wandb
+    wandb.init(project="KAN-GPSConv", config=args)
+
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     
     if args.task == 'node':
@@ -56,6 +60,17 @@ def main(args):
         data = split_data(data)
         data = data.to(device)
         
+        wandb.config.update({
+            "model_type": "KAN-GPS",
+            "dataset": args.dataset,
+            "task": args.task,
+            "num_features": data.num_features,
+            "num_classes": num_classes,
+            "learning_rate": 0.01,
+            "weight_decay": 5e-4,
+            "num_epochs": 200
+        })
+        
         # Initialize model
         model = GPSNetwork(data.num_features, num_classes, task='node').to(device)
         optimizer = torch.optim.Adam(model.parameters(), lr=0.01, weight_decay=5e-4)
@@ -63,16 +78,40 @@ def main(args):
         # Training loop
         for epoch in range(200):
             loss = train_node(model, data, optimizer)
+            train_acc = test_node(model, data, data.train_mask)
+            val_acc = test_node(model, data, data.val_mask)
+            test_acc = test_node(model, data, data.test_mask)
+            
+            # Log metrics to wandb
+            wandb.log({
+                "epoch": epoch,
+                "loss": loss,
+                "train_acc": train_acc,
+                "val_acc": val_acc,
+                "test_acc": test_acc,
+                "gpu_memory_allocated": torch.cuda.memory_allocated(),
+                "gpu_memory_cached": torch.cuda.memory_cached()
+            })
+            
             if epoch % 10 == 0:
-                train_acc = test_node(model, data, data.train_mask)
-                val_acc = test_node(model, data, data.val_mask)
-                test_acc = test_node(model, data, data.test_mask)
                 print(f'Epoch: {epoch:03d}, Loss: {loss:.4f}, Train: {train_acc:.4f}, Val: {val_acc:.4f}, Test: {test_acc:.4f}')
     
     elif args.task == 'graph':
         # Load and preprocess data for graph classification
         dataset, num_classes = load_dataset(args.dataset, task='graph')
         train_loader, val_loader, test_loader = prepare_graph_data(dataset)
+        
+        wandb.config.update({
+            "model_type": "KAN-GPS",
+            "dataset": args.dataset,
+            "task": args.task,
+            "num_features": dataset.num_node_features,
+            "num_classes": num_classes,
+            "learning_rate": 0.01,
+            "weight_decay": 5e-4,
+            "num_epochs": 200,
+            "batch_size": train_loader.batch_size
+        })
         
         # Initialize model
         model = GPSNetwork(dataset.num_node_features, num_classes, task='graph').to(device)
@@ -81,14 +120,29 @@ def main(args):
         # Training loop
         for epoch in range(200):
             loss = train_graph(model, train_loader, optimizer, device)
+            train_acc = test_graph(model, train_loader, device)
+            val_acc = test_graph(model, val_loader, device)
+            test_acc = test_graph(model, test_loader, device)
+            
+            # Log metrics to wandb
+            wandb.log({
+                "epoch": epoch,
+                "loss": loss,
+                "train_acc": train_acc,
+                "val_acc": val_acc,
+                "test_acc": test_acc,
+                "gpu_memory_allocated": torch.cuda.memory_allocated(),
+                "gpu_memory_cached": torch.cuda.memory_cached()
+            })
+            
             if epoch % 10 == 0:
-                train_acc = test_graph(model, train_loader, device)
-                val_acc = test_graph(model, val_loader, device)
-                test_acc = test_graph(model, test_loader, device)
                 print(f'Epoch: {epoch:03d}, Loss: {loss:.4f}, Train: {train_acc:.4f}, Val: {val_acc:.4f}, Test: {test_acc:.4f}')
     
     else:
         raise ValueError("Task must be either 'node' or 'graph'")
+    
+    # Close wandb run
+    wandb.finish()
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Train GPS Network on node or graph classification datasets')
