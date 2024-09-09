@@ -13,7 +13,7 @@ This project explores the integration of Kolmogorov-Arnold Network (KAN) layers 
 5. Provide a comprehensive analysis of the results and insights gained from integrating KAN layers into GPS networks.
 
 ## Directory Structure
-
+```
 KAN-GPSConv/
 ├── data/                   # Stores datasets (automatically downloaded)
 ├── models/                 # Model architectures
@@ -29,7 +29,7 @@ KAN-GPSConv/
 ├── README.md               # This file
 ├── requirements.txt        # Python dependencies
 └── setup.py                # Package installation script
-
+```
 ## Key Components
 
 1. **GPS Network**: Our main model architecture, implemented in `models/gps_network.py`. It supports both node and graph classification tasks and incorporates KAN layers.
