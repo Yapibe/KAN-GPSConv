@@ -24,3 +24,6 @@ venv/
 
 # MacOS
 .DS_Store
+
+# Egg-info directory
+*.egg-info/
