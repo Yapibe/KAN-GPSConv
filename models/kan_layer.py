@@ -3,33 +3,33 @@ import torch.nn as nn
 import torch.nn.functional as F
 
 class KANLayer(nn.Module):
-    def __init__(self, in_features, out_features, num_neurons=10):
+    def __init__(self, in_features, out_features, grid_features=100, use_bias=True):
         super(KANLayer, self).__init__()
         self.in_features = in_features
         self.out_features = out_features
-        self.num_neurons = num_neurons
+        self.grid_features = grid_features
         
-        # Initialize weights and biases
-        self.weights = nn.Parameter(torch.Tensor(num_neurons, in_features))
-        self.biases = nn.Parameter(torch.Tensor(num_neurons))
-        self.output_weights = nn.Parameter(torch.Tensor(out_features, num_neurons))
+        self.linear_in = nn.Linear(in_features, grid_features, bias=use_bias)
+        self.weight = nn.Parameter(torch.Tensor(out_features, grid_features))
+        if use_bias:
+            self.bias = nn.Parameter(torch.Tensor(out_features))
+        else:
+            self.register_parameter('bias', None)
         
-        # Initialize parameters
         self.reset_parameters()
-    
+
     def reset_parameters(self):
-        nn.init.xavier_uniform_(self.weights)
-        nn.init.xavier_uniform_(self.output_weights)
-        nn.init.zeros_(self.biases)
-    
-    def forward(self, x):
-        # Compute the inner products
-        inner_products = F.linear(x, self.weights, self.biases)
-        
-        # Apply activation function (e.g., sine for KAN)
-        activations = torch.sin(inner_products)
-        
-        # Compute output
-        output = F.linear(activations, self.output_weights)
-        
+        nn.init.kaiming_uniform_(self.weight, a=math.sqrt(5))
+        if self.bias is not None:
+            fan_in, _ = nn.init._calculate_fan_in_and_fan_out(self.weight)
+            bound = 1 / math.sqrt(fan_in)
+            nn.init.uniform_(self.bias, -bound, bound)
+
+    def forward(self, input):
+        # Project input to grid space
+        x = self.linear_in(input)
+        # Apply periodic activation
+        x = torch.sin(x)
+        # Linear transformation
+        output = F.linear(x, self.weight, self.bias)
         return output

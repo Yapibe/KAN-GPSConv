@@ -2,7 +2,7 @@ import torch
 import torch.nn.functional as F
 from sklearn.metrics import accuracy_score, precision_recall_fscore_support
 from utils.data_loader import load_dataset, split_data
-from models.gps_network import GPSNetwork
+from models.gps_layer import GPSNetwork
 import argparse
 import json
 import os

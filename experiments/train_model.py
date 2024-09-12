@@ -2,7 +2,7 @@ import torch
 import torch.nn.functional as F
 from torch_geometric.nn import GCNConv
 from utils.data_loader import load_dataset, split_data, prepare_graph_data
-from models.gps_network import GPSNetwork
+from models.gps_layer import GPSNetwork
 import argparse
 import wandb
 
@@ -68,12 +68,14 @@ def main(args):
             "num_classes": num_classes,
             "learning_rate": 0.01,
             "weight_decay": 5e-4,
-            "num_epochs": 200
+            "optimizer": "SGD",
+            "momentum": 0.9,
+            "num_epochs": args.epochs
         })
         
         # Initialize model
         model = GPSNetwork(data.num_features, num_classes, task='node').to(device)
-        optimizer = torch.optim.Adam(model.parameters(), lr=0.01, weight_decay=5e-4)
+        optimizer = torch.optim.SGD(model.parameters(), lr=0.01, momentum=0.9)
         
         # Training loop
         for epoch in range(200):
@@ -109,13 +111,15 @@ def main(args):
             "num_classes": num_classes,
             "learning_rate": 0.01,
             "weight_decay": 5e-4,
-            "num_epochs": 200,
+            "optimizer": "SGD",
+            "momentum": 0.9,
+            "num_epochs": args.epochs,
             "batch_size": train_loader.batch_size
         })
         
         # Initialize model
         model = GPSNetwork(dataset.num_node_features, num_classes, task='graph').to(device)
-        optimizer = torch.optim.Adam(model.parameters(), lr=0.01)
+        optimizer = torch.optim.SGD(model.parameters(), lr=0.01, momentum=0.9)
         
         # Training loop
         for epoch in range(200):
@@ -148,6 +152,7 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Train GPS Network on node or graph classification datasets')
     parser.add_argument('--dataset', type=str, default='Cora', help='Dataset name')
     parser.add_argument('--task', type=str, default='node', choices=['node', 'graph'], help='Task type: node or graph classification')
+    parser.add_argument('--epochs', type=int, default=1000, help='Number of epochs to train')
     args = parser.parse_args()
     
     main(args)

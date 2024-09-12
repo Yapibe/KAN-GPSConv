@@ -16,15 +16,26 @@ This project explores the integration of Kolmogorov-Arnold Network (KAN) layers 
 ```
 KAN-GPSConv/
 ├── data/                   # Stores datasets (automatically downloaded)
+├── external_libs/          # External libraries
+│   ├── efficient-kan       # Efficient Kolmogorov-Arnold Network implementation
+│   ├── fast-kan            # Fast Kolmogorov-Arnold Network implementation
+│   ├── faster-kan          # Faster Kolmogorov-Arnold Network implementation
+│   ├── FCN-KAN             # FCN-KAN implementation
+│   ├── GraphGPS            # Graph Positional Signatures implementation
+│   ├── GraphKAN            # Graph Kolmogorov-Arnold Network implementation
+│   ├── LKAN                # LKAN implementation
+│   └── pykan               # PyKAN implementation
 ├── models/                 # Model architectures
-│   ├── gps_network.py      # Main GPS network with KAN integration
-│   └── kan_layer.py        # Implementation of the KAN layer
+│   ├── gps_layer.py        # Implementation of the GPS layer
+│   ├── kan_layer.py        # Implementation of the KAN layer
+│   └── kan_gps_model.py    # Implementation of the KAN-GPS model
 ├── experiments/            # Experiment scripts and notebooks
 │   ├── train_model.py      # Main training script
 │   └── evaluate_model.py   # Evaluation script for trained models
 ├── results/                # Stores evaluation metrics and logs
 ├── utils/                  # Helper functions and utilities
-│   └── data_loader.py      # Dataset loading and preprocessing functions
+│   ├── data_loader.py      # Dataset loading and preprocessing functions
+│   └── train_utils.py      # Training and evaluation utilities
 ├── literature_review/      # Relevant papers and research summaries
 ├── README.md               # This file
 ├── requirements.txt        # Python dependencies
@@ -41,6 +52,16 @@ KAN-GPSConv/
 4. **Training Script**: `experiments/train_model.py` handles the training process for both node and graph classification tasks.
 
 5. **Evaluation Script**: `experiments/evaluate_model.py` is used to evaluate trained models on test sets and generate performance metrics.
+
+## Recent Insights and Changes
+
+1. **KAN Implementation**: We've learned that it's more effective to implement KAN for graphs in the latent feature space. This is achieved by using a linear layer to project input features into a latent space before applying the KAN layer.
+
+2. **Optimizer Choice**: Recent experiments suggest that using SGD (with momentum) leads to more stable training compared to Adam, albeit with slower convergence. We've updated our training script to support both optimizers for comparison.
+
+3. **Extended Training**: Due to the slower convergence of SGD, we've increased the default number of training epochs.
+
+4. **Weights & Biases Integration**: We use Weights & Biases (wandb) for experiment tracking and visualization.
 
 ## Setup and Installation
 
@@ -67,14 +88,20 @@ KAN-GPSConv/
 To train the model on a node classification task:
 
 ```
-python experiments/train_model.py --dataset Cora --task node
+python experiments/train_model.py --dataset Cora --task node --optimizer sgd --epochs 1000
 ```
 
 To train the model on a graph classification task:
 
 ```
-python experiments/train_model.py --dataset MUTAG --task graph
+python experiments/train_model.py --dataset MUTAG --task graph --optimizer sgd --epochs 1000
 ```
+
+Command-line arguments:
+- `--dataset`: Name of the dataset (e.g., 'Cora', 'MUTAG')
+- `--task`: 'node' for node classification, 'graph' for graph classification
+- `--optimizer`: 'sgd' or 'adam'
+- `--epochs`: Number of training epochs
 
 ## Evaluation
 
@@ -111,6 +138,12 @@ python experiments/evaluate_model.py --dataset Cora --task node --model_path pat
 5. The training script currently uses Adam optimizer with default learning rates. Learning rate scheduling or different optimizers can be implemented for potentially better performance.
 
 6. For large datasets, especially in graph classification tasks, consider implementing mini-batch training and data parallelism for improved efficiency.
+
+## Key Findings
+
+1. The initial linear projection before KAN layers is crucial for effective training.
+2. SGD optimizer shows more stable training but requires more epochs compared to Adam.
+3. The integration of KAN layers into GPS networks shows promise in enhancing model expressiveness.
 
 ## Future Work
 
