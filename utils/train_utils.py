@@ -1,7 +1,10 @@
+"""
+This module contains utility functions for training and evaluating models.
+"""
+
 import torch
 import torch.nn.functional as F
-from torch_geometric.data import Data
-from torch_geometric.loader import DataLoader
+
 
 def train_node(model, data, optimizer):
     """
@@ -17,12 +20,13 @@ def train_node(model, data, optimizer):
     """
     model.train()
     optimizer.zero_grad()
-    pos_encoding = data.pos_encoding if hasattr(data, 'pos_encoding') else None
+    pos_encoding = getattr(data, 'pos_encoding', None)
     out = model(data.x, data.edge_index, pos_encoding)
     loss = F.cross_entropy(out[data.train_mask], data.y[data.train_mask])
     loss.backward()
     optimizer.step()
     return loss.item()
+
 
 def train_graph(model, loader, optimizer, device):
     """
@@ -42,13 +46,14 @@ def train_graph(model, loader, optimizer, device):
     for data in loader:
         data = data.to(device)
         optimizer.zero_grad()
-        pos_encoding = data.pos_encoding if hasattr(data, 'pos_encoding') else None
+        pos_encoding = getattr(data, 'pos_encoding', None)
         out = model(data.x, data.edge_index, pos_encoding)
         loss = F.cross_entropy(out, data.y)
         loss.backward()
         optimizer.step()
         total_loss += loss.item() * data.num_graphs
     return total_loss / len(loader.dataset)
+
 
 def test_node(model, data, mask):
     """
@@ -64,12 +69,13 @@ def test_node(model, data, mask):
     """
     model.eval()
     with torch.no_grad():
-        pos_encoding = data.pos_encoding if hasattr(data, 'pos_encoding') else None
+        pos_encoding = getattr(data, 'pos_encoding', None)
         out = model(data.x, data.edge_index, pos_encoding)
         pred = out.argmax(dim=1)
         correct = pred[mask] == data.y[mask]
         acc = int(correct.sum()) / int(mask.sum())
     return acc
+
 
 def test_graph(model, loader, device):
     """
@@ -89,14 +95,15 @@ def test_graph(model, loader, device):
     for data in loader:
         data = data.to(device)
         with torch.no_grad():
-            pos_encoding = data.pos_encoding if hasattr(data, 'pos_encoding') else None
+            pos_encoding = getattr(data, 'pos_encoding', None)
             out = model(data.x, data.edge_index, pos_encoding)
             pred = out.argmax(dim=1)
             correct += (pred == data.y).float().sum().item()
             total += data.num_graphs
     return correct / total
 
-def train_and_evaluate(model, data, optimizer, scheduler, args, device, task='node'):
+
+def train_and_evaluate(model, data, optimizer, scheduler, args, device, task="node"):
     """
     Train and evaluate the model for the specified number of epochs.
 
@@ -110,20 +117,20 @@ def train_and_evaluate(model, data, optimizer, scheduler, args, device, task='no
         task (str): Either 'node' or 'graph' to specify the task type.
 
     Returns:
-        float: The test accuracy of the best model.
+        tuple: A tuple containing (test_accuracy, best_model_state).
     """
     best_val_acc = 0.0
     best_model_state = None
 
     for epoch in range(args.epochs):
-        if task == 'node':
+        if task == "node":
             loss = train_node(model, data, optimizer)
             train_acc = test_node(model, data, data.train_mask)
             val_acc = test_node(model, data, data.val_mask)
         else:  # graph
-            loss = train_graph(model, data['train'], optimizer, device)
-            train_acc = test_graph(model, data['train'], device)
-            val_acc = test_graph(model, data['val'], device)
+            loss = train_graph(model, data["train"], optimizer, device)
+            train_acc = test_graph(model, data["train"], device)
+            val_acc = test_graph(model, data["val"], device)
 
         scheduler.step()
 
@@ -132,13 +139,15 @@ def train_and_evaluate(model, data, optimizer, scheduler, args, device, task='no
             best_model_state = model.state_dict()
 
         if epoch % 10 == 0:
-            print(f'Epoch: {epoch:03d}, Loss: {loss:.4f}, Train Acc: {train_acc:.4f}, Val Acc: {val_acc:.4f}')
+            print(
+                f"Epoch: {epoch:03d}, Loss: {loss:.4f}, Train Acc: {train_acc:.4f}, Val Acc: {val_acc:.4f}"
+            )
 
     model.load_state_dict(best_model_state)
-    if task == 'node':
+    if task == "node":
         test_acc = test_node(model, data, data.test_mask)
     else:  # graph
-        test_acc = test_graph(model, data['test'], device)
+        test_acc = test_graph(model, data["test"], device)
 
-    print(f'Test Accuracy: {test_acc:.4f}')
+    print(f"Test Accuracy: {test_acc:.4f}")
     return test_acc, best_model_state
