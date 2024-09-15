@@ -1,3 +1,4 @@
+import os
 import torch
 from torch_geometric.datasets import Planetoid, WebKB, Actor, TUDataset
 from torch_geometric.transforms import NormalizeFeatures
@@ -7,7 +8,13 @@ from ogb.nodeproppred import PygNodePropPredDataset
 from ogb.graphproppred import PygGraphPropPredDataset
 from torch.utils.data import random_split
 from torch_geometric.utils import get_laplacian
-from torch_sparse import SparseTensor
+
+# Ensure compatibility between PyTorch and torch-sparse
+torch_version = torch.__version__.split('+')[0]
+cuda_version = torch.version.cuda.split('.')[0] if torch.version.cuda else 'cpu'
+
+# Use python -m pip to ensure the correct environment
+os.system(f'python -m pip install torch-sparse -f https://data.pyg.org/whl/torch-{torch_version}+{cuda_version}.html')
 
 def generate_positional_encoding(num_nodes, pos_dim):
     position = torch.arange(0, num_nodes, dtype=torch.float).unsqueeze(1)
