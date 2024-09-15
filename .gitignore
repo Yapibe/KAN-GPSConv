@@ -1,7 +1,8 @@
-# Byte-compiled / optimized / DLL files
+# Python-related
 __pycache__/
 *.py[cod]
 *$py.class
+*.egg-info/
 
 # C extensions
 *.so
@@ -10,12 +11,14 @@ __pycache__/
 env/
 venv/
 .venv/
-
-# Conda environments
 .conda/
 .env
 
-# Jupyter Notebook checkpoints
+# IDEs and editors
+.vscode/
+.idea/
+
+# Jupyter Notebook
 .ipynb_checkpoints
 
 # Logs and databases
@@ -25,10 +28,6 @@ venv/
 # MacOS
 .DS_Store
 
-# Egg-info directory
-*.egg-info/
-/data/
-.idea/
-.vscode/
+# Project-specific
 wandb/
-wandb/
+data/
