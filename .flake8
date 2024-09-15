@@ -8,4 +8,6 @@ exclude =
     old,
     build,
     dist,
-    external_libs
+    external_libs,
+    .vscode,
+    .idea
