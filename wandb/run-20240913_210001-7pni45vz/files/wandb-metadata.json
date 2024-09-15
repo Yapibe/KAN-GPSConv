@@ -1,0 +1,42 @@
+{
+  "os":  "Linux-5.10.16.3-microsoft-standard-WSL2-x86_64-with-glibc2.35",
+  "python":  "3.11.8",
+  "startedAt":  "2024-09-13T18:00:01.187537Z",
+  "program":  "/home/yair/projects/KAN-GPSConv/experiments/train_model.py",
+  "codePath":  "experiments/train_model.py",
+  "git":  {
+    "remote":  "https://github.com/Yapibe/KAN-GPSConv.git",
+    "commit":  "875e409e03ebdfaebc21c1265d5e666c048b00a3"
+  },
+  "email":  "yairp1@mail.tau.ac.il",
+  "root":  "/home/yair/projects/KAN-GPSConv",
+  "host":  "Yairpc",
+  "username":  "yair",
+  "executable":  "/home/yair/miniconda3/envs/kan-gpsconv/bin/python",
+  "codePathLocal":  "experiments/train_model.py",
+  "cpu_count":  4,
+  "cpu_count_logical":  8,
+  "gpu":  "[NVIDIA GeForce MX330]",
+  "gpu_count":  1,
+  "disk":  {
+    "/":  {
+      "total":  "269490393088",
+      "used":  "96503369728"
+    }
+  },
+  "memory":  {
+    "total":  "8200380416"
+  },
+  "cpu":  {
+    "count":  4,
+    "countLogical":  8
+  },
+  "gpu_nvidia":  [
+    {
+      "name":  "NVIDIA GeForce MX330",
+      "memoryTotal":  "2147483648",
+      "architecture":  "Pascal"
+    }
+  ],
+  "cudaVersion":  "12.5"
+}

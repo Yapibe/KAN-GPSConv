@@ -27,3 +27,6 @@ venv/
 
 # Egg-info directory
 *.egg-info/
+/data/
+.idea/
+.vscode/

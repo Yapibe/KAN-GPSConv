@@ -2,7 +2,7 @@ import torch
 import torch.nn.functional as F
 from sklearn.metrics import accuracy_score, precision_recall_fscore_support
 from utils.data_loader import load_dataset, split_data
-from models.gps_layer import GPSNetwork
+from models.kan_gps_model import KANGPSModel
 import argparse
 import json
 import os
@@ -10,7 +10,7 @@ import os
 def evaluate(model, data):
     model.eval()
     with torch.no_grad():
-        out = model(data)
+        out = model(data.x, data.edge_index, data.pos_encoding)
         pred = out.argmax(dim=1)
         y_true = data.y[data.test_mask].cpu().numpy()
         y_pred = pred[data.test_mask].cpu().numpy()
@@ -29,7 +29,7 @@ def main(args):
     data = data.to(device)
     
     # Initialize model
-    model = GPSNetwork(data.num_features, num_classes).to(device)
+    model = KANGPSModel(data.num_features, hidden_channels=64, out_channels=num_classes, num_layers=3).to(device)
     
     # Load trained model weights
     model.load_state_dict(torch.load(args.model_path))
