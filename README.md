@@ -1,16 +1,16 @@
-# KAN-GPSConv: Integrating Kolmogorov-Arnold Networks with Graph Positional Signatures
+# KAN-GPS: Integrating Kolmogorov-Arnold Networks with Graph Positional Signatures
 
 ## Project Overview
 
-This project explores the integration of Kolmogorov-Arnold Network (KAN) layers into Graph Positional Signatures (GPS) networks for both node and graph classification tasks. Our goal is to enhance the expressiveness and interpretability of graph neural networks while maintaining or improving their performance on various benchmark datasets.
+This project explores the integration of Kolmogorov-Arnold Network (KAN) layers into Graph Positional Signatures (GPS) networks for various graph-based tasks. Our goal is to enhance the expressiveness and interpretability of graph neural networks while maintaining or improving their performance on benchmark datasets.
 
 ## Project Goals
 
-1. Implement a flexible GPS network architecture that incorporates KAN layers.
-2. Support both node classification and graph classification tasks.
-3. Evaluate the performance of our KAN-GPS model on various benchmark datasets.
-4. Compare the expressiveness, interpretability, and performance of our model with standard GPS networks and other state-of-the-art graph neural networks.
-5. Provide a comprehensive analysis of the results and insights gained from integrating KAN layers into GPS networks.
+1. Design and implement two KAN-GPS architectures: Hybrid-KAN-GPS and KAN-GPS.
+2. Evaluate the performance of these architectures on benchmark datasets from the Open Graph Benchmark (OGB).
+3. Compare the expressiveness, interpretability, and performance of our models with standard GPS networks and other state-of-the-art graph neural networks.
+4. Analyze the continual learning capabilities of KAN-GPS models, focusing on knowledge retention.
+5. Investigate the interpretability aspects of KAN-GPS by visualizing learned univariate functions and analyzing model components.
 
 ## Directory Structure
 ```
@@ -43,31 +43,69 @@ KAN-GPSConv/
 ```
 ## Key Components
 
-1. **GPS Network**: Our main model architecture, implemented in `models/gps_network.py`. It supports both node and graph classification tasks and incorporates KAN layers.
+1. **Hybrid-KAN-GPS**: An architecture that replaces the final MLP in the standard GPS layer with a KAN layer.
+2. **KAN-GPS**: An architecture that replaces both the MPNN and Global Attention mechanisms with KAN-based counterparts, in addition to using a KAN layer for final processing.
+3. **Continual Learning Evaluation**: Focus on knowledge retention when models are trained sequentially on multiple tasks or datasets.
+4. **Interpretability Analysis**: Visualization of learned univariate spline functions and exploration of the relationship between MPNN and Global Attention layers.
 
-2. **KAN Layer**: Implemented in `models/kan_layer.py`, this layer adds the expressiveness of Kolmogorov-Arnold representation to our graph neural network.
+## Methodology
 
-3. **Data Loader**: Located in `utils/data_loader.py`, it supports loading various node and graph classification datasets, including Planetoid datasets (Cora, Citeseer, PubMed), WebKB datasets, Actor dataset, OGB datasets, and TUDatasets for graph classification.
+### Hybrid-KAN-GPS Layer
 
-4. **Training Script**: `experiments/train_model.py` handles the training process for both node and graph classification tasks.
+The Hybrid-KAN-GPS layer is defined as:
 
-5. **Evaluation Script**: `experiments/evaluate_model.py` is used to evaluate trained models on test sets and generate performance metrics.
+$X^{(l+1)}, E^{(l+1)} = \text{Hybrid-KAN-GPS}^{(l)}(X^{(l)}, E^{(l)}, A)$
 
-## Recent Insights and Changes
+computed as:
 
-1. **KAN Implementation**: We've learned that it's more effective to implement KAN for graphs in the latent feature space. This is achieved by using a linear layer to project input features into a latent space before applying the KAN layer.
+$$
+\begin{align*}
+X_M^{(l+1)}, E^{(l+1)} &= \text{MPNN}^{(l)}(X^{(l)}, E^{(l)}, A) \\
+X_T^{(l+1)} &= \text{GlobalAttn}^{(l)}(X^{(l)}) \\
+X_M^{(l+1)} &= \text{BatchNorm}(\text{Dropout}(X_M^{(l+1)}) + X^{(l)}) \\
+X_T^{(l+1)} &= \text{BatchNorm}(\text{Dropout}(X_T^{(l+1)}) + X^{(l)}) \\
+X^{(l+1)} &= \text{KAN}^{(l)}(X_M^{(l+1)} + X_T^{(l+1)})
+\end{align*}
+$$
 
-2. **Optimizer Choice**: Recent experiments suggest that using SGD (with momentum) leads to more stable training compared to Adam, albeit with slower convergence. We've updated our training script to support both optimizers for comparison.
+### KAN-GPS Layer
 
-3. **Extended Training**: Due to the slower convergence of SGD, we've increased the default number of training epochs.
+The KAN-GPS layer is defined as:
 
-4. **Weights & Biases Integration**: We use Weights & Biases (wandb) for experiment tracking and visualization.
+$X^{(l+1)}, E^{(l+1)} = \text{KAN-GPS}^{(l)}(X^{(l)}, E^{(l)}, A)$
+
+computed as:
+
+$$
+\begin{align*}
+X_M^{(l+1)}, E^{(l+1)} &= \text{KAN-MPNN}^{(l)}(X^{(l)}, E^{(l)}, A) \\
+X_T^{(l+1)} &= \text{KAN-GlobalAttn}^{(l)}(X^{(l)}) \\
+X_M^{(l+1)} &= \text{BatchNorm}(\text{Dropout}(X_M^{(l+1)}) + X^{(l)}) \\
+X_T^{(l+1)} &= \text{BatchNorm}(\text{Dropout}(X_T^{(l+1)}) + X^{(l)}) \\
+X^{(l+1)} &= \text{KAN}^{(l)}(X_M^{(l+1)} + X_T^{(l+1)})
+\end{align*}
+$$
+
+## Evaluation
+
+We will evaluate our models on benchmark datasets from the Open Graph Benchmark (OGB) across different tasks, including:
+- Node classification
+- Link prediction
+- Graph classification
+
+For continual learning evaluation, we will simulate sequential learning scenarios and monitor performance on both new and previously learned tasks.
+
+## Expected Outcomes
+
+1. Improved performance on OGB benchmark tasks compared to standard GPS and baseline models.
+2. Demonstration of practical utility and benefits in continual learning and interpretability, even if not achieving the best performance in all tasks.
+3. Insights into the impact of KAN layers on model expressiveness and interpretability in graph neural networks.
 
 ## Setup and Installation
 
 1. Clone the repository:
    ```
-   git clone https://github.com/your-username/KAN-GPSConv.git
+   git clone https://github.com/Yapibe/KAN-GPSConv.git
    cd KAN-GPSConv
    ```
 
@@ -155,7 +193,7 @@ python experiments/evaluate_model.py --dataset Cora --task node --model_path pat
 
 ## Contributing
 
-We welcome contributions to the KAN-GPSConv project! Please read our CONTRIBUTING.md file for guidelines on how to submit issues, feature requests, and pull requests.
+We welcome contributions to the KAN-GPS project! Please read our CONTRIBUTING.md file for guidelines on how to submit issues, feature requests, and pull requests.
 
 ## License
 
@@ -165,6 +203,7 @@ This project is licensed under the MIT License - see the LICENSE.md file for det
 
 - This project builds upon the work on Graph Positional Signatures and Kolmogorov-Arnold Networks.
 - We thank the PyTorch Geometric team for their excellent framework for graph neural networks.
+- We acknowledge the Open Graph Benchmark (OGB) for providing standardized datasets and evaluation protocols.
 
 ## Contact
 
