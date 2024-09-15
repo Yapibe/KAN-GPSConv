@@ -1,1 +1,0 @@
-{"epoch":9,"loss":1.9480761289596558,"_runtime":53.820286602,"train_acc":0.14285714285714285,"_timestamp":1.7263236373584127e+09,"gpu_memory_reserved":0,"_step":9,"_wandb":{"runtime":62},"val_acc":0.114,"gpu_memory_allocated":0}
