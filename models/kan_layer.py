@@ -1,11 +1,20 @@
 """
 This module contains the implementation of KAN layers.
 """
+import sys
+import os
+# Add project root and external library paths
+project_root = os.path.abspath(os.path.dirname(os.path.dirname(__file__)))
+sys.path.insert(0, project_root)
 
+# Adjust path to the `src` directory inside `efficient-kan`
+sys.path.insert(0, os.path.join(project_root, 'external_libs', 'efficient-kan', 'src'))
+
+# Now you can import KANLinear from efficient_kan.kan
+from efficient_kan.kan import KANLinear
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from efficient_kan import KANLinear  # Corrected import
 
 
 class KANLayer(KANLinear):

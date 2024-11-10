@@ -1,9 +1,19 @@
+import sys
+import os
+import warnings
+warnings.filterwarnings("ignore", message="Using 'NeighborSampler' without a 'pyg-lib' installation is deprecated")
+# Add project root and external library paths
+project_root = os.path.abspath(os.path.dirname(os.path.dirname(__file__)))
+sys.path.insert(0, project_root)
+
+# Adjust path to the `src` directory inside `efficient-kan`
+sys.path.insert(0, os.path.join(project_root, 'external_libs', 'efficient-kan', 'src'))
+import torch
+from models.kan_gps_model import HybridKANGPS
 import torch
 import argparse
 import wandb
 import os
-import pandas as pd
-from datetime import datetime
 from utils.data_loader import load_dataset
 from models.kan_gps_model import HybridKANGPS
 from models.KANGPS import KANGPS
@@ -161,7 +171,7 @@ def main(args):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Train KAN-GPS Network on specified prediction level and task")
 
-    parser.add_argument("--model_name_id", type=str, required=True, help="model name or id")
+    parser.add_argument("--model_name_id", type=str, default="default_model", help="model name or id")
 
     parser.add_argument("--prediction_level", type=str, default="node", choices=["node", "graph"],
                         help="Level of prediction: node or graph")
@@ -169,10 +179,10 @@ if __name__ == "__main__":
                         choices=["classification-binary", "classification-multiclass", "regression"],
                         help="Type of prediction task")
 
-    parser.add_argument("--data_source", type=str, default="OGB",
+    parser.add_argument("--data_source", type=str, default="Planetoid",
                         choices=["Planetoid", "WebKB", "Actor", "TUDataset", "OGB", "torch_geometric_datasets"],
                         help="Data source")
-    parser.add_argument("--dataset_name", type=str, required=True, help="Dataset name")
+    parser.add_argument("--dataset_name", type=str, default="Cora", help="Dataset name")
 
     # Data Loader arguments
     parser.add_argument("--batch_size", type=int, default=32, help="Batch size for graph level task")
