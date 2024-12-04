@@ -21,16 +21,15 @@ from utils.train_utils import train_and_evaluate
 from torch_geometric.graphgym.utils.comp_budget import params_count
 from torch_geometric import seed_everything
 
-
 def main(args):
     seed_everything(args.seed)
-
+    wandb.login(key="c48c8a1278e99c4d9c66ecfe5d7d4151b7570ad8")
     # wandb.init(mode="offline")
     wandb.init(project="KAN-GPSConv", config=args)
 
-    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    # device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     # device = torch.device("mps" if torch.backends.mps.is_available() else "cpu")
-
+    device = torch.device("cpu")
     dataset, train_loader, valid_loader, test_loader, output_dim = load_dataset(
         root='./data', data_source=args.data_source,
         dataset_name=args.dataset_name,
