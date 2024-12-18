@@ -2,7 +2,7 @@ torch==2.0.1+cu118         # Ensure compatibility with CUDA 11.8
 torch-geometric==2.5.3     # Compatible version with torch 2.0.1
 numpy==1.24.3
 scikit-learn==1.2.2
-matplotlib==3.7.1
+matplotlib==3.7.1          # Visualization library
 pytorch-lightning==2.0.0   # For advanced PyTorch features
 yacs==0.1.8                # Config management tool, as needed
 torchmetrics==0.11.4       # For evaluating model metrics
@@ -11,4 +11,39 @@ tensorboardX==2.6          # TensorBoard integration for logging
 ogb==1.3.6                 # Open Graph Benchmark for datasets
 wandb==0.18.0              # Weights and Biases for experiment tracking
 fsspec==2023.10.0          # Filesystem specification layer
-rdkit-pypi==2023.3.3       # If required for chemistry applications
+
+# Added dependencies for resolving errors
+scipy==1.14.1              # Required for scientific computing
+joblib>=1.1.1              # Parallel processing (required by scikit-learn)
+threadpoolctl>=2.0.0       # Thread pool control (required by scikit-learn)
+aiohttp                    # Asynchronous HTTP requests (required by torch-geometric)
+psutil>=5.8.0              # System resource monitoring (required by torch-geometric)
+pyparsing                  # Parsing utilities (required by torch-geometric)
+tqdm                       # Progress bar utility (required by torch-geometric)
+
+# Dependencies for matplotlib
+contourpy>=1.0.1
+cycler>=0.10
+fonttools>=4.22.0
+kiwisolver>=1.0.1
+packaging>=20.0
+python-dateutil>=2.7
+
+# Dependencies for ogb
+outdated>=0.2.0
+pandas>=0.24.0
+six>=1.12.0
+
+# Dependencies for pytorch-lightning
+lightning-utilities>=0.7.0
+PyYAML>=5.4
+
+# Dependencies for wandb
+click!=8.0.0,>=7.1
+docker-pycreds>=0.4.0
+gitpython!=3.1.29,>=1.0.0
+platformdirs
+protobuf!=4.21.0,!=5.28.0,<6,>=3.19.0
+pyyaml
+sentry-sdk>=1.0.0
+setproctitle

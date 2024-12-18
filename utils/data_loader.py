@@ -164,7 +164,6 @@ def load_dataset(root, data_source, dataset_name,
                               structural_encoding_type=structural_encoding_type, se_dim=se_dim,
                               concat_pe=concat_pe, concat_se=concat_se)
     if prediction_level == "node":
-
         if data_source == "Planetoid":
             dataset = Planetoid(root=root, name=dataset_name, transform=transform)
             data = dataset[0]
@@ -194,6 +193,7 @@ def load_dataset(root, data_source, dataset_name,
                                                                             sample_sizes=num_neighbors_sample_size)
             return dataset, train_loader, valid_loader, test_loader, dataset.num_classes
         elif data_source == "OGB":
+            
             dataset = PygNodePropPredDataset(name=dataset_name, root=root, transform=transform)
             data = dataset[0]
             data = data.to(device)

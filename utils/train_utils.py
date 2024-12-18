@@ -188,6 +188,7 @@ def train_graph(model, train_loader, optimizer, device, args, output_dim, mode="
         return total_loss / len(train_loader.dataset)
 
     elif mode == 'batch':
+
         for step, batched_data in enumerate(train_loader):
             batched_data = batched_data.to(device)
             x, edge_index, batch = batched_data.x, batched_data.edge_index, batched_data.batch
@@ -348,6 +349,7 @@ def test_graph(model, loader, device, args, mode='batch', return_predictions=Fal
 
 def train_and_evaluate(model, train_loader, valid_loader, test_loader, optimizer, scheduler, args, device,
                        output_dim, mode="batch"):
+    
     if args.prediction_task == "regression":
         best_val_metric = float('inf')  # Lower is better for MSE
     else:

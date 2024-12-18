@@ -10,7 +10,6 @@ sys.path.insert(0, project_root)
 sys.path.insert(0, os.path.join(project_root, 'external_libs', 'efficient-kan', 'src'))
 import torch
 from models.kan_gps_model import HybridKANGPS
-import torch
 import argparse
 import wandb
 import os
@@ -22,16 +21,21 @@ from torch_geometric.graphgym.utils.comp_budget import params_count
 from torch_geometric import seed_everything
 
 def main(args):
-    seed_everything(args.seed)
-    wandb.login(key="c48c8a1278e99c4d9c66ecfe5d7d4151b7570ad8")
-    # wandb.init(mode="offline")
-    wandb.init(project="KAN-GPSConv", config=args)
 
-    # device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    seed_everything(args.seed)
+
+    #wandb.login(key="c48c8a1278e99c4d9c66ecfe5d7d4151b7570ad8")
+    #wandb.init(project="KAN-GPSConv", config=args,dir='/home/yandex/MLWG2024/yairp1/KAN-GPSConv/wandb')
+    # wandb.init(mode="offline")
+
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     # device = torch.device("mps" if torch.backends.mps.is_available() else "cpu")
-    device = torch.device("cpu")
+    # device = torch.device("cpu")
+
+    
+
     dataset, train_loader, valid_loader, test_loader, output_dim = load_dataset(
-        root='./data', data_source=args.data_source,
+        root='/home/yandex/MLWG2024/yairp1/KAN-GPSConv/data', data_source=args.data_source,
         dataset_name=args.dataset_name,
         batch_size=args.batch_size,
         prediction_task=args.prediction_task, prediction_level=args.prediction_level,
@@ -40,6 +44,7 @@ def main(args):
         se_dim=args.se_dim, structural_encoding_type=args.structural_encoding_type,
         num_neighbors_sample_size=args.num_neighbors_sample_size, device=device
     )
+
     # Determine the input dimension
     if args.prediction_level == "node":
         input_dim = dataset.num_features
@@ -85,10 +90,73 @@ def main(args):
 
             return_embeddings=args.return_embeddings,
             pool=args.prediction_level == 'graph',
-            final_layer_activation=None if args.prediction_task == 'regression' else torch.nn.Softmax(dim=1)
+            final_layer_activation= None if args.prediction_task == 'regression' else torch.nn.Softmax(dim=1)
         ).to(device)
 
-    wandb.config.update({
+    #wandb.config.update({
+        #"model_name_id": args.model_name_id,
+        #"model_type": args.model_type,
+        #"model_MPNN_layer_type": args.model_mpnn_type,
+        #"dataset": args.dataset_name,
+        #"data_source": args.data_source,
+        #"prediction_level": args.prediction_level,
+        #"prediction_task": args.prediction_task,
+        #"input_dim":input_dim,
+        #"num_features": dataset.num_features if args.prediction_level == "node" else dataset.num_node_features,
+        #"num_classes": output_dim,
+        #"positional_encoding_dim": args.pe_dim,
+        #"positional_encoding_type": args.pos_encoding_type,
+        #"structural_encoding_dim": args.se_dim,
+        #"structural_encoding_type": args.structural_encoding_type,
+        #"batch_size": args.batch_size,
+        #"learning_rate": args.lr,
+        #"weight_decay": args.weight_decay,
+        #"optimizer": args.optimizer,
+        #"momentum": args.momentum,
+        #"num_epochs": args.epochs,
+        #"model_number_of_params": params_count(model),
+
+        ## New KANGPS parameters
+        #"dropout": args.dropout,
+        #"attn_num_heads": args.attn_num_heads,
+        #"attention_dropout": args.attention_dropout,
+
+        #"grid_size": args.grid_size,
+        #"spline_order": args.spline_order,
+        #"kan_hidden_dim": args.kan_hidden_dim,
+        #"kan_num_of_hidden_layers": args.kan_num_of_hidden_layers,
+
+        #"grid_size_attention": args.grid_size_attention,
+        #"spline_order_attention": args.spline_order_attention,
+        #"kan_hidden_dim_attention": args.kan_hidden_dim_attention,
+        #"kan_num_of_hidden_layers_attention": args.kan_num_of_hidden_layers_attention,
+
+        #"grid_size_mpnn": args.grid_size_mpnn,
+        #"spline_order_mpnn": args.spline_order_mpnn,
+        #"kan_hidden_dim_mpnn": args.kan_hidden_dim_mpnn,
+        #"kan_num_of_hidden_layers_mpnn": args.kan_num_of_hidden_layers_mpnn,
+
+        #"kan_input_layer_dim": args.kan_input_layer_dim,
+        #"kan_out_layer_dim": args.kan_out_layer_dim,
+        #"return_embeddings": args.return_embeddings
+    #})
+
+    if args.optimizer == "SGD":
+        optimizer = getattr(torch.optim, args.optimizer)(
+            model.parameters(),
+            lr=args.lr,
+            weight_decay=args.weight_decay,
+            momentum=args.momentum if args.optimizer == "SGD" else 0
+        )
+    else:
+        optimizer = getattr(torch.optim, args.optimizer)(
+            model.parameters(),
+            lr=args.lr,
+            weight_decay=args.weight_decay
+        )
+    scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=50, gamma=0.5)
+
+    print({
         "model_name_id": args.model_name_id,
         "model_type": args.model_type,
         "model_MPNN_layer_type": args.model_mpnn_type,
@@ -96,6 +164,7 @@ def main(args):
         "data_source": args.data_source,
         "prediction_level": args.prediction_level,
         "prediction_task": args.prediction_task,
+        "input_dim":input_dim,
         "num_features": dataset.num_features if args.prediction_level == "node" else dataset.num_node_features,
         "num_classes": output_dim,
         "positional_encoding_dim": args.pe_dim,
@@ -135,36 +204,20 @@ def main(args):
         "return_embeddings": args.return_embeddings
     })
 
-    if args.optimizer == "SGD":
-        optimizer = getattr(torch.optim, args.optimizer)(
-            model.parameters(),
-            lr=args.lr,
-            weight_decay=args.weight_decay,
-            momentum=args.momentum if args.optimizer == "SGD" else 0
-        )
-    else:
-        optimizer = getattr(torch.optim, args.optimizer)(
-            model.parameters(),
-            lr=args.lr,
-            weight_decay=args.weight_decay
-        )
-
-
-
-    scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=50, gamma=0.5)
-
     test_metric_result, best_model_state, test_res_df = train_and_evaluate(
         model=model,
         train_loader=train_loader, valid_loader=valid_loader, test_loader=test_loader,
         optimizer=optimizer, scheduler=scheduler, args=args, device=device,
         output_dim=output_dim)
 
-    result_dir = f"data/{args.dataset_name}/results/{args.model_name_id}"
+    result_dir = f"/home/yandex/MLWG2024/yairp1/KAN-GPSConv/data/{args.dataset_name}/results/{args.model_name_id}"
     os.makedirs(result_dir, exist_ok=True)
-    torch.save(best_model_state, result_dir + "/best_model_state.pt")
     test_res_df.to_csv(result_dir + "/test_res_df.csv")
-    wandb.log({"test_metric_result": test_metric_result})
-    wandb.finish()
+    torch.save(best_model_state, result_dir + "/best_model_state.pt")
+    
+    
+    #wandb.log({"test_metric_result": test_metric_result})
+    #wandb.finish()
 
 
 if __name__ == "__main__":
@@ -190,33 +243,33 @@ if __name__ == "__main__":
                         help="Sample sizes for NeighborSampler")
 
     # Positional and Structural Encoding arguments
-    parser.add_argument("--pe_dim", type=int, default=8, help="Dimension of positional encoding")
+    parser.add_argument("--pe_dim", type=int, default=0, help="Dimension of positional encoding")
     parser.add_argument("--concat_pe", type=bool, default=True, help="Concat positional encoding into feature matrix?")
-    parser.add_argument("--pos_encoding_type", type=str, default="laplacian_eigenvectors",
+    parser.add_argument("--pos_encoding_type", type=str, default=None,
                         choices=["sinusoidal", "laplacian_eigenvectors", "RandomWalk"],
                         help="Type of positional encoding")
 
-    parser.add_argument("--se_dim", type=int, default=8, help="Dimension of structural encoding")
+    parser.add_argument("--se_dim", type=int, default=0, help="Dimension of structural encoding")
     parser.add_argument("--concat_se", type=bool, default=True, help="Concat structural encoding into feature matrix?")
-    parser.add_argument("--structural_encoding_type", type=str, default="RWSE",
+    parser.add_argument("--structural_encoding_type", type=str, default=None,
                         choices=["RWSE", "laplacian_eigenvalues"],
                         help="Type of structural encoding")
 
     # Model arguments
     parser.add_argument("--seed", type=int, default=42, help="Random seed")
-    parser.add_argument("--epochs", type=int, default=20, help="Number of epochs to train")
+    parser.add_argument("--epochs", type=int, default=100, help="Number of epochs to train")
     parser.add_argument("--lr", type=float, default=0.01, help="Learning rate")
     parser.add_argument("--weight_decay", type=float, default=5e-4, help="Weight decay")
     parser.add_argument("--optimizer", type=str, default="SGD", choices=["SGD", "Adam"], help="Optimizer")
     parser.add_argument("--momentum", type=float, default=0.9, help="Momentum for SGD optimizer")
-    parser.add_argument("--hidden_channels_dim", type=int, default=64, help="hidden channels dimension")
-    parser.add_argument("--num_layers", type=int, default=10, help="Number of layers")
+    parser.add_argument("--hidden_channels_dim", type=int, default=16, help="hidden channels dimension")
+    parser.add_argument("--num_layers", type=int, default=4, help="Number of layers")
     parser.add_argument("--model_type", type=str, default="kangps", choices=["hybrid", "kangps"],
                         help="Model type: hybrid or kangps")
     parser.add_argument("--model_mpnn_type", type=str, default="GCN", choices=["GCN", "GIN"],
                         help="Model MPNN layer type")
 
-    parser.add_argument("--dropout", type=float, default=0.1, help="Dropout rate")
+    parser.add_argument("--dropout", type=float, default=0.05, help="Dropout rate")
     parser.add_argument("--attn_num_heads", type=int, default=1, help="Number of attention heads")
     parser.add_argument("--attention_dropout", type=float, default=0.1, help="Dropout rate in attention layers")
 

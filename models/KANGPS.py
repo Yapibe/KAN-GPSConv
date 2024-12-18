@@ -110,7 +110,7 @@ class GraphormerKANLayer(torch.nn.Module):
                                                      attention_dropout,
                                                      batch_first=True)
         # If kan_input_layer_dim and kan_out_layer_dim are not specified, default to embed_dim
-        kan_input_layer_dim = kan_input_layer_dim if kan_input_layer_dim is not None else embed_dim * num_heads
+        kan_input_layer_dim = kan_input_layer_dim if kan_input_layer_dim is not None else embed_dim
         kan_out_layer_dim = kan_out_layer_dim if kan_out_layer_dim is not None else embed_dim
 
         self.kan = make_kan(num_features=kan_input_layer_dim,
