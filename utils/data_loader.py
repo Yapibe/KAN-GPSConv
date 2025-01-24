@@ -8,7 +8,7 @@ from torch.utils.data import random_split
 from torch_geometric.utils import get_laplacian,degree
 from torch_geometric.loader import DataLoader
 from torch_geometric.loader import NeighborLoader
-
+import multiprocessing
 
 
 class AddSinusoidalPE(object):
@@ -27,6 +27,8 @@ class AddSinusoidalPE(object):
         pe[:, 1::2] = torch.cos(position * div_term)
         setattr(data, self.attr_name, pe)
         return data
+    
+
 class AddLaplacianEigenvaluesSE(object):
     def __init__(self, se_dim, attr_name='structural_encoding'):
         self.se_dim = se_dim
@@ -39,6 +41,8 @@ class AddLaplacianEigenvaluesSE(object):
         eigenvalues = eigenvalues[:self.se_dim].unsqueeze(1)  # Shape: (se_dim, 1)
         setattr(data, self.attr_name, eigenvalues)
         return data
+    
+
 class AddNodeDegreeSE(object):
     def __init__(self, attr_name='structural_encoding'):
         self.attr_name = attr_name
@@ -48,6 +52,8 @@ class AddNodeDegreeSE(object):
         deg = deg.unsqueeze(1)  # Shape: (num_nodes, 1)
         setattr(data, self.attr_name, deg)
         return data
+    
+
 class ComputeRWSEPower(object):
     def __init__(self, attr_name='RWSE', exponent=8, se_attr_name='structural_encoding'):
         self.attr_name = attr_name
@@ -62,29 +68,40 @@ class ComputeRWSEPower(object):
             setattr(data, self.se_attr_name, RWSE_diag)
             setattr(data, self.attr_name, None)
         return data
+
+
 class ConcatAttributesToX(object):
     def __init__(self, attr_names):
         self.attr_names = attr_names
 
     def __call__(self, data):
         attrs = []
+        # Decide device from data.x if it exists
+        x_device = data.x.device if data.x is not None else None
+
         for attr_name in self.attr_names:
             attr = getattr(data, attr_name, None)
             if attr is not None:
+                # Move attr to the same device as data.x if data.x exists
+                if x_device is not None:
+                    attr = attr.to(x_device)
                 attrs.append(attr.float())
-                setattr(data, attr_name, None)  # Remove the attribute after concatenation
+                # Remove attribute after concatenation
+                setattr(data, attr_name, None)  
         if attrs:
             if data.x is not None:
                 data.x = torch.cat([data.x.float()] + attrs, dim=-1)
             else:
                 data.x = torch.cat(attrs, dim=-1)
         return data
+    
 
 class ConvertNodeFeaturesToFloat(object):
     def __call__(self, data):
         if data.x is not None:
             data.x = data.x.float()
         return data
+    
 
 def get_transform(pos_encoding_type, pe_dim,
                   structural_encoding_type, se_dim, concat_pe, concat_se):
@@ -126,7 +143,7 @@ def get_transform(pos_encoding_type, pe_dim,
         transforms.append(AddLaplacianEigenvaluesSE(se_dim=se_dim, attr_name=se_attr_name))
         if concat_se:
             concat_attrs.append(se_attr_name)
-    elif structural_encoding_type == 'Node degree':
+    elif structural_encoding_type == 'Node_degree':
         transforms.append(AddNodeDegreeSE(attr_name=se_attr_name))
         if concat_se:
             concat_attrs.append(se_attr_name)
@@ -148,7 +165,6 @@ def get_transform(pos_encoding_type, pe_dim,
 
     transform = T.Compose(transforms)
     return transform
-
 
 
 
@@ -251,16 +267,17 @@ def load_dataset(root, data_source, dataset_name,
             train_dataset, val_dataset, test_dataset = random_split(
                 dataset,
                 [num_training, num_val, num_test],
-                generator=torch.Generator().manual_seed(42),
+                generator=torch.Generator(),
             )
-            train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True)
-            valid_loader = DataLoader(val_dataset, batch_size=batch_size, shuffle=False)
-            test_loader = DataLoader(test_dataset, batch_size=batch_size, shuffle=False)
+
+            train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True,num_workers=multiprocessing.cpu_count())
+            valid_loader = DataLoader(val_dataset, batch_size=batch_size, shuffle=False,num_workers=multiprocessing.cpu_count())
+            test_loader = DataLoader(test_dataset, batch_size=batch_size, shuffle=False,num_workers=multiprocessing.cpu_count())
+            
             num_classes = 1 if prediction_task == "regression" else dataset.num_tasks
             return dataset, train_loader, valid_loader, test_loader, num_classes
         elif (data_source == "torch_geometric_datasets") & (dataset_name == 'ZINC'):
 
-            dataset = ZINC(root=root, pre_transform=transform)
             train_dataset = ZINC(root=root, split='train', pre_transform=transform)
             val_dataset = ZINC(root=root, split='val', pre_transform=transform)
             test_dataset = ZINC(root=root, split='test', pre_transform=transform)
@@ -269,12 +286,16 @@ def load_dataset(root, data_source, dataset_name,
             valid_loader = DataLoader(val_dataset, batch_size=batch_size, shuffle=False)
             test_loader = DataLoader(test_dataset, batch_size=batch_size, shuffle=False)
             num_classes = 1
-
-            return dataset, train_loader, valid_loader, test_loader, num_classes
+            
+            return train_dataset, train_loader, valid_loader, test_loader, num_classes
+        
         elif "OGB" in data_source:
+            import builtins
+            builtins.input = lambda _: "y"
             dataset = PygGraphPropPredDataset(name=dataset_name, root=root, transform=transform)
             dataset = dataset.to(device)
             split_idx = dataset.get_idx_split()
+
             train_loader = DataLoader(dataset[split_idx["train"]], batch_size=batch_size, shuffle=True)
             valid_loader = DataLoader(dataset[split_idx["valid"]], batch_size=batch_size, shuffle=False)
             test_loader = DataLoader(dataset[split_idx["test"]], batch_size=batch_size, shuffle=False)
@@ -303,9 +324,9 @@ def split_node_task_data(data, val_ratio=0.2, test_ratio=0.2):
     return data
 
 
-def preprocess_graph_data(data, batch_size, device, num_workers=4, sample_sizes=None):
+def preprocess_graph_data(data, batch_size, device, sample_sizes=None):
     sample_sizes = [5, 5] if sample_sizes is None else sample_sizes
-
+    num_workers = multiprocessing.cpu_count()
     data = split_node_task_data(data=data)
     data = data.to(device)
 
